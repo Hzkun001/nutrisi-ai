@@ -7,8 +7,10 @@ import EmptyStateCard from "@/components/shared/EmptyStateCard";
 import { Button } from "@/components/ui/button";
 import { fetchHistory } from "@/lib/api";
 import type { HistoryScan } from "@/lib/types";
+import { useLanguage } from "@/lib/i18n";
 
 const HistoryPage = () => {
+  const { t, locale } = useLanguage();
   const navigate = useNavigate();
   const [scans, setScans] = useState<HistoryScan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,14 +29,14 @@ const HistoryPage = () => {
       <main className="pt-20 pb-12 md:pb-16 px-4">
         <div className="container mx-auto max-w-4xl">
           <div className="mb-6">
-            <h1 className="text-xl md:text-2xl font-bold">Scan History</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">View all your past food scans</p>
+            <h1 className="text-xl md:text-2xl font-bold">{t("history.title")}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">{t("history.description")}</p>
           </div>
 
           {isLoading ? (
             <div className="flex items-center justify-center py-20 gap-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-sm">Loading history…</span>
+              <span className="text-sm">{t("history.loading")}</span>
             </div>
           ) : error ? (
             <div className="glass-panel rounded-xl px-5 py-4 text-sm text-destructive">
@@ -43,17 +45,17 @@ const HistoryPage = () => {
           ) : scans.length === 0 ? (
             <EmptyStateCard
               icon={Clock}
-              title="No scans yet"
-              description="Upload your first food image to see it here."
+              title={t("history.empty.title")}
+              description={t("history.empty.desc")}
             />
           ) : (
             <div className="glass-panel rounded-xl overflow-hidden">
               {/* Table Header */}
               <div className="hidden md:grid grid-cols-[auto_1fr_100px_140px_72px] gap-4 px-4 py-2.5 border-b border-border/50 section-label">
-                <span className="w-10">Image</span>
-                <span>Filename</span>
-                <span className="text-right">Calories</span>
-                <span className="text-right">Date</span>
+                <span className="w-10">{t("history.header.image")}</span>
+                <span>{t("history.header.file")}</span>
+                <span className="text-right">{t("history.header.calories")}</span>
+                <span className="text-right">{t("history.header.date")}</span>
                 <span />
               </div>
 
@@ -73,19 +75,19 @@ const HistoryPage = () => {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{scan.original_filename}</p>
                     <p className="text-xs text-muted-foreground md:hidden mt-0.5">
-                      {scan.total_calories} kcal · {new Date(scan.created_at).toLocaleDateString()}
+                      {scan.total_calories} kcal · {new Date(scan.created_at).toLocaleDateString(locale === "id" ? "id-ID" : "en-US")}
                     </p>
                   </div>
                   <span className="hidden md:block text-sm text-right text-stat-calories font-semibold tabular-nums">
                     {scan.total_calories} kcal
                   </span>
                   <span className="hidden md:block text-[13px] text-right text-muted-foreground">
-                    {new Date(scan.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {new Date(scan.created_at).toLocaleDateString(locale === "id" ? "id-ID" : "en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                   <div className="hidden md:flex justify-end">
                     <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
                       <Eye className="h-3 w-3" />
-                      View
+                      {t("history.view")}
                     </Button>
                   </div>
                 </motion.div>

@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Upload, Image as ImageIcon, Loader2, Sparkles, AlertCircle, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/lib/i18n";
 
 type UploadState = "empty" | "preview" | "loading";
 
@@ -12,6 +13,7 @@ interface UploadCardProps {
 }
 
 const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) => {
+  const { t } = useLanguage();
   const [state, setState] = useState<UploadState>("empty");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -55,8 +57,8 @@ const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) =>
           <Upload className="h-5 w-5 text-green-600" />
         </div>
         <div>
-          <h2 className="text-base font-bold text-gray-900">Upload Image</h2>
-          <p className="text-xs text-gray-500">JPG, PNG, or WebP (Max 10MB)</p>
+          <h2 className="text-base font-bold text-gray-900">{t("upload.title")}</h2>
+          <p className="text-xs text-gray-500">{t("upload.subtitle")}</p>
         </div>
       </div>
 
@@ -78,8 +80,8 @@ const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) =>
                 <ImageIcon className="h-6 w-6 text-gray-400 group-hover:text-green-500 transition-colors" />
               </div>
               <div className="text-center">
-                <p className="text-sm sm:text-base font-bold text-gray-700">Drop your food image here</p>
-                <p className="text-sm text-gray-400 mt-1">or click to browse files</p>
+                <p className="text-sm sm:text-base font-bold text-gray-700">{t("upload.drop.title")}</p>
+                <p className="text-sm text-gray-400 mt-1">{t("upload.drop.desc")}</p>
               </div>
               <input type="file" accept="image/*" className="hidden" onChange={handleSelect} />
             </label>
@@ -95,7 +97,7 @@ const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) =>
             className="space-y-4"
           >
             <div className="relative rounded-3xl overflow-hidden border border-gray-100 bg-gray-50 aspect-[4/3] flex items-center justify-center p-2">
-              <img src={previewUrl} alt="Food preview" className="max-w-full max-h-full object-contain rounded-2xl shadow-sm" />
+              <img src={previewUrl} alt={t("upload.previewAlt")} className="max-w-full max-h-full object-contain rounded-2xl shadow-sm" />
               <button
                 onClick={handleClear}
                 disabled={isLoading}
@@ -118,7 +120,7 @@ const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) =>
               disabled={isLoading}
             >
               <Sparkles className="h-5 w-5" />
-              Analyze Nutrition
+              {t("upload.button")}
             </Button>
           </motion.div>
         )}
@@ -136,8 +138,8 @@ const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) =>
               <Loader2 className="h-12 w-12 text-green-600 animate-spin relative z-10" />
             </div>
             <div className="text-center">
-              <p className="text-lg font-bold text-gray-900 mb-1">Analyzing...</p>
-              <p className="text-sm text-gray-500 animate-pulse">Running AI Vision Models</p>
+              <p className="text-lg font-bold text-gray-900 mb-1">{t("upload.loading.title")}</p>
+              <p className="text-sm text-gray-500 animate-pulse">{t("upload.loading.desc")}</p>
             </div>
           </motion.div>
         )}

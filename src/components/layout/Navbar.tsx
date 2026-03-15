@@ -2,16 +2,18 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Scan, Clock, Info, Leaf, Menu, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-
-const navLinks = [
-  { to: "/scan", label: "Scanner", icon: Scan },
-  { to: "/history", label: "History", icon: Clock },
-  { to: "/about", label: "About", icon: Info },
-];
+import { useLanguage } from "@/lib/i18n";
 
 const Navbar = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { locale, setLocale, t } = useLanguage();
+
+  const navLinks = [
+    { to: "/scan", label: t("navbar.scan"), icon: Scan },
+    { to: "/history", label: t("navbar.history"), icon: Clock },
+    { to: "/about", label: t("navbar.about"), icon: Info },
+  ];
 
   useEffect(() => {
     setMobileOpen(false);
@@ -63,13 +65,26 @@ const Navbar = () => {
             type="button"
             onClick={() => setMobileOpen((prev) => !prev)}
             className="md:hidden h-9 w-9 rounded-full border border-gray-200 bg-white/90 text-gray-700 flex items-center justify-center"
-            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-label={mobileOpen ? t("navbar.menuClose") : t("navbar.menuOpen")}
             aria-expanded={mobileOpen}
           >
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
 
-          <div className="hidden md:block w-7" />
+          <div className="hidden md:flex items-center rounded-full bg-gray-100 p-1 border border-gray-200">
+            {(["id", "en"] as const).map((lang) => (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => setLocale(lang)}
+                className={`h-7 px-2.5 rounded-full text-[11px] font-semibold transition-colors ${
+                  locale === lang ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                {t(`locale.${lang}`)}
+              </button>
+            ))}
+          </div>
         </div>
 
         <AnimatePresence>
@@ -93,6 +108,22 @@ const Navbar = () => {
                   </Link>
                 );
               })}
+              <div className="mt-1 flex items-center gap-2 px-1 py-1">
+                {(["id", "en"] as const).map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => setLocale(lang)}
+                    className={`h-8 px-3 rounded-lg text-xs font-semibold border transition-colors ${
+                      locale === lang
+                        ? "bg-gray-100 text-gray-900 border-gray-200"
+                        : "bg-white text-gray-500 border-gray-200 hover:text-gray-900"
+                    }`}
+                  >
+                    {t(`locale.${lang}`)}
+                  </button>
+                ))}
+              </div>
             </motion.nav>
           )}
         </AnimatePresence>

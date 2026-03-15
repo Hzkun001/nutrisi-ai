@@ -10,8 +10,10 @@ import EmptyStateCard from "@/components/shared/EmptyStateCard";
 import { Scan as ScanIcon, AlertTriangle } from "lucide-react";
 import { analyzeImage } from "@/lib/api";
 import type { ScanResult } from "@/lib/types";
+import { useLanguage } from "@/lib/i18n";
 
 const ScannerPage = () => {
+  const { t } = useLanguage();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,7 @@ const ScannerPage = () => {
       const result = await analyzeImage(file);
       setScanResult(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Terjadi kesalahan saat menganalisis gambar.");
+      setError(err instanceof Error ? err.message : t("scanner.error"));
     } finally {
       setIsLoading(false);
     }
@@ -42,9 +44,9 @@ const ScannerPage = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="mb-8 md:mb-10 text-center">
             <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-2.5 md:mb-3 text-gray-900">
-              AI Food Scanner
+              {t("scanner.title")}
             </h1>
-            <p className="text-base md:text-lg text-gray-500 max-w-xl mx-auto">Upload a photo of your meal and get an instant AI nutrition estimate powered by advanced vision models.</p>
+            <p className="text-base md:text-lg text-gray-500 max-w-xl mx-auto">{t("scanner.description")}</p>
           </div>
 
           <div className="grid xl:grid-cols-[380px_1fr] gap-6 lg:gap-8">
@@ -73,8 +75,8 @@ const ScannerPage = () => {
                   <EmptyStateCard
                     key="empty"
                     icon={ScanIcon}
-                    title="Awaiting Image"
-                    description="Upload a food image on the left and click Analyze to reveal nutrition metrics."
+                    title={t("scanner.empty.title")}
+                    description={t("scanner.empty.desc")}
                   />
                 ) : (
                   <motion.div
@@ -85,7 +87,7 @@ const ScannerPage = () => {
                   >
                     {/* Labels */}
                     <div className="p-5 sm:p-8 rounded-3xl bg-white border border-gray-100 shadow-sm">
-                      <h3 className="text-xs font-bold uppercase tracking-widest text-cyan-600 mb-5">Detected Labels</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-widest text-cyan-600 mb-5">{t("scanner.labels")}</h3>
                       <div className="flex flex-wrap gap-2">
                         {scanResult.vision_labels.map((l, i) => <LabelBadge key={l} label={l} index={i} />)}
                       </div>
@@ -93,7 +95,7 @@ const ScannerPage = () => {
 
                     {/* Foods */}
                     <div className="p-5 sm:p-8 rounded-3xl bg-white border border-gray-100 shadow-sm">
-                      <h3 className="text-xs font-bold uppercase tracking-widest text-green-600 mb-5">Detected Foods</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-widest text-green-600 mb-5">{t("scanner.foods")}</h3>
                       <div className="grid sm:grid-cols-2 gap-4">
                         {scanResult.detected_foods.map((f, i) => <FoodResultCard key={f.input_name} food={f} index={i} />)}
                       </div>
@@ -110,7 +112,7 @@ const ScannerPage = () => {
                         <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-amber-400 mb-2">
-                            Mismatched Database Entries:
+                            {t("scanner.unmatched")}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {scanResult.unmatched_labels.map((label) => (

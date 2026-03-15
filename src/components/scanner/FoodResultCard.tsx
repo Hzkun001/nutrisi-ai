@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { DetectedFood } from "@/lib/types";
+import { useLanguage } from "@/lib/i18n";
 
 interface FoodResultCardProps {
   food: DetectedFood;
@@ -7,8 +8,9 @@ interface FoodResultCardProps {
 }
 
 const FoodResultCard = ({ food, index = 0 }: FoodResultCardProps) => {
+  const { t } = useLanguage();
   // Defensive fallbacks for older DB records that may have different field shapes
-  const displayName = food.display_name || food.input_name || "Unknown food";
+  const displayName = food.display_name || food.input_name || t("food.unknown");
   const matchedName = food.matched_name || "";
   const portionGrams = food.portion_grams ?? 100;
   const calories = Math.round(food.calories ?? 0);
@@ -31,15 +33,15 @@ const FoodResultCard = ({ food, index = 0 }: FoodResultCardProps) => {
           )}
         </div>
         <span className="text-xs text-green-600 bg-green-50 px-2.5 py-1 rounded-md font-bold ml-3 shrink-0 border border-green-100">
-          {portionGrams}g
+          {portionGrams} g
         </span>
       </div>
       <div className="grid grid-cols-4 gap-1">
         {[
-          { label: "Cal", value: calories, color: "text-stat-calories" },
-          { label: "Pro", value: `${protein}g`, color: "text-stat-protein" },
-          { label: "Fat", value: `${fat}g`, color: "text-stat-fat" },
-          { label: "Carb", value: `${carbs}g`, color: "text-stat-carbs" },
+          { label: t("food.metric.cal"), value: calories, color: "text-stat-calories" },
+          { label: t("food.metric.pro"), value: `${protein}g`, color: "text-stat-protein" },
+          { label: t("food.metric.fat"), value: `${fat}g`, color: "text-stat-fat" },
+          { label: t("food.metric.carb"), value: `${carbs}g`, color: "text-stat-carbs" },
         ].map((item) => (
           <div key={item.label} className="text-center py-2 rounded-xl bg-gray-50 border border-gray-100">
             <p className={`text-sm font-bold tabular-nums ${item.color}`}>{item.value}</p>

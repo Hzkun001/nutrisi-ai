@@ -16,6 +16,23 @@ function jsonError(res: VercelResponse, message: string, status = 400) {
   return res.status(status).json({ error: message });
 }
 
+function toTitleCase(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function localizeLabel(label: string): string {
+  const normalized = label.trim().toLowerCase();
+  const mapped = DISPLAY_NAME_RULES[normalized];
+  if (mapped) {
+    return mapped.replace(/\s*\(estimasi\)\s*$/i, "");
+  }
+  return toTitleCase(normalized);
+}
+
 async function callGeminiVision(
   imageBase64: string,
   mimeType: string,
@@ -63,11 +80,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
   const SUPABASE_KEY = process.env.SUPABASE_KEY ?? process.env.VITE_SUPABASE_KEY ?? "";
 
   if (request.method !== "POST") {
-    return jsonError(response, "Method not allowed", 405);
+    return jsonError(response, "Metode tidak diizinkan", 405);
   }
 
   if (!GEMINI_API_KEY) {
-    return jsonError(response, "GEMINI_API_KEY not configured", 500);
+    return jsonError(response, "GEMINI_API_KEY belum dikonfigurasi", 500);
   }
 
   // Parse multipart form
@@ -89,14 +106,14 @@ export default async function handler(request: VercelRequest, response: VercelRe
     parsed = await parseForm();
   } catch (err) {
     console.error("formData parse error:", err);
-    return jsonError(response, "Invalid multipart form data", 400);
+    return jsonError(response, "Format multipart form tidak valid", 400);
   }
 
   const { files } = parsed;
   const fileArray = files?.file;
 
   if (!fileArray || fileArray.length === 0) {
-    return jsonError(response, "No image uploaded. Send file as 'file' field.", 400);
+    return jsonError(response, "Gambar belum diunggah. Kirim file dengan field bernama 'file'.", 400);
   }
 
   const fileDetail = fileArray[0];
@@ -120,7 +137,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     rawLabels = await callGeminiVision(base64, mimeType, GEMINI_API_KEY, GEMINI_MODEL);
   } catch (err) {
     console.error("Gemini vision error:", err);
-    return jsonError(response, `AI vision failed: ${String(err)}`, 502);
+    return jsonError(response, `AI vision gagal memproses gambar: ${String(err)}`, 502);
   }
 
   // Normalize & filter labels
@@ -165,14 +182,16 @@ export default async function handler(request: VercelRequest, response: VercelRe
   total.carbs    = Math.round(total.carbs    * 100) / 100;
 
   const note = "Estimasi berdasarkan hasil vision dan porsi standar.";
+  const localizedVisionLabels = visionLabels.map(localizeLabel);
+  const localizedUnmatchedLabels = unmatchedLabels.map(localizeLabel);
 
   const responseBody = {
     raw_vision_labels: rawLabels,
-    vision_labels: visionLabels,
+    vision_labels: localizedVisionLabels,
     detected_foods: detectedFoods,
     total,
     note,
-    unmatched_labels: unmatchedLabels,
+    unmatched_labels: localizedUnmatchedLabels,
   };
 
   // Save to Supabase
@@ -182,8 +201,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
       await supabase.from("scan_results").insert({
         original_filename: fileDetail.originalFilename || "unknown",
         raw_vision_labels: rawLabels,
-        filtered_vision_labels: visionLabels,
-        unmatched_labels: unmatchedLabels,
+        filtered_vision_labels: localizedVisionLabels,
+        unmatched_labels: localizedUnmatchedLabels,
         detected_foods: detectedFoods,
         total_calories: total.calories,
         total_protein: total.protein,

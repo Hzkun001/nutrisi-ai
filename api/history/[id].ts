@@ -8,16 +8,16 @@ export default async function handler(
   { params }: { params: { id: string } }
 ): Promise<Response> {
   if (request.method !== "GET") {
-    return Response.json({ error: "Method not allowed" }, { status: 405 });
+    return Response.json({ error: "Metode tidak diizinkan" }, { status: 405 });
   }
 
   const id = params?.id;
   if (!id) {
-    return Response.json({ error: "Missing scan id" }, { status: 400 });
+    return Response.json({ error: "ID scan belum diberikan" }, { status: 400 });
   }
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return Response.json({ error: "Supabase not configured" }, { status: 500 });
+    return Response.json({ error: "Supabase belum dikonfigurasi" }, { status: 500 });
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);

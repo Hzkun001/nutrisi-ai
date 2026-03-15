@@ -9,8 +9,10 @@ import LabelBadge from "@/components/scanner/LabelBadge";
 import { Button } from "@/components/ui/button";
 import { fetchHistoryDetail } from "@/lib/api";
 import type { HistoryScan } from "@/lib/types";
+import { useLanguage } from "@/lib/i18n";
 
 const ScanDetailPage = () => {
+  const { t, locale } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const [scan, setScan] = useState<HistoryScan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,14 +33,14 @@ const ScanDetailPage = () => {
         <div className="container mx-auto max-w-3xl">
           <Button asChild variant="ghost" size="sm" className="gap-1.5 mb-5 -ml-2 text-xs h-8">
             <Link to="/history">
-              <ArrowLeft className="h-3.5 w-3.5" /> Back to History
+              <ArrowLeft className="h-3.5 w-3.5" /> {t("detail.back")}
             </Link>
           </Button>
 
           {isLoading ? (
             <div className="flex items-center justify-center py-20 gap-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-sm">Loading scan…</span>
+              <span className="text-sm">{t("detail.loading")}</span>
             </div>
           ) : error ? (
             <div className="glass-panel rounded-xl px-5 py-4 text-sm text-destructive">
@@ -57,10 +59,10 @@ const ScanDetailPage = () => {
               {/* Meta */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                 {[
-                  { icon: Hash, label: "Scan ID", value: `#${scan.id}` },
-                  { icon: FileText, label: "Image", value: scan.original_filename },
-                  { icon: Calendar, label: "Date", value: new Date(scan.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) },
-                  { icon: ImageIcon, label: "Foods", value: `${scan.detected_foods.length} items` },
+                  { icon: Hash, label: t("detail.meta.id"), value: `#${scan.id}` },
+                  { icon: FileText, label: t("detail.meta.image"), value: scan.original_filename },
+                  { icon: Calendar, label: t("detail.meta.date"), value: new Date(scan.created_at).toLocaleDateString(locale === "id" ? "id-ID" : "en-US", { month: "short", day: "numeric", year: "numeric" }) },
+                  { icon: ImageIcon, label: t("detail.meta.foods"), value: `${scan.detected_foods.length} ${t("detail.item")}` },
                 ].map((meta) => (
                   <div key={meta.label} className="glass-panel rounded-lg p-3">
                     <div className="flex items-center gap-1.5 mb-1">
@@ -75,7 +77,7 @@ const ScanDetailPage = () => {
               {/* Labels */}
               {scan.filtered_vision_labels?.length > 0 && (
                 <div>
-                  <h3 className="section-label mb-2.5">Detected Labels</h3>
+                  <h3 className="section-label mb-2.5">{t("detail.labels")}</h3>
                   <div className="flex flex-wrap gap-1.5">
                     {scan.filtered_vision_labels.map((l, i) => <LabelBadge key={l} label={l} index={i} />)}
                   </div>
@@ -84,7 +86,7 @@ const ScanDetailPage = () => {
 
               {/* Foods */}
               <div>
-                <h3 className="section-label mb-2.5">Detected Foods</h3>
+                <h3 className="section-label mb-2.5">{t("detail.foods")}</h3>
                 {scan.detected_foods?.length > 0 ? (
                   <div className="grid sm:grid-cols-2 gap-2.5">
                     {scan.detected_foods.map((f, i) => (
@@ -92,7 +94,7 @@ const ScanDetailPage = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Tidak ada makanan yang terdeteksi.</p>
+                  <p className="text-sm text-muted-foreground">{t("detail.noFoods")}</p>
                 )}
               </div>
 

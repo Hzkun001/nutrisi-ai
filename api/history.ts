@@ -8,11 +8,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
   const method = request.method ?? "GET";
   
   if (method !== "GET") {
-    return response.status(405).json({ error: "Method not allowed" });
+    return response.status(405).json({ error: "Metode tidak diizinkan" });
   }
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return response.status(500).json({ error: "Supabase not configured" });
+    return response.status(500).json({ error: "Supabase belum dikonfigurasi" });
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -25,7 +25,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
   if (error) {
     console.error("Supabase error:", error.message);
-    return response.status(502).json({ error: "Failed to fetch history" });
+    return response.status(502).json({ error: "Gagal mengambil riwayat scan" });
   }
 
   return response.status(200).json({ results: data ?? [] });
