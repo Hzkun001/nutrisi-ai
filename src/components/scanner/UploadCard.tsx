@@ -49,7 +49,7 @@ const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) =>
   };
 
   return (
-    <div className="bg-white border border-gray-100 rounded-3xl p-4 sm:p-6 h-full shadow-lg">
+    <div className="bg-white border border-gray-100 rounded-3xl p-4 sm:p-6 shadow-lg">
       <div className="flex items-center gap-3 mb-5 sm:mb-6">
         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-50 to-cyan-50 flex flex-shrink-0 items-center justify-center border border-gray-100">
           <Upload className="h-5 w-5 text-green-600" />
@@ -67,12 +67,12 @@ const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) =>
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="h-full min-h-[320px] sm:min-h-[400px]"
+            className="min-h-[220px] sm:min-h-[280px] lg:min-h-[360px]"
           >
             <label
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              className="flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-gray-200 hover:border-green-400 p-6 sm:p-10 lg:p-12 cursor-pointer transition-all duration-300 group bg-gray-50 hover:bg-green-50/50 h-full w-full"
+              className="flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-gray-200 hover:border-green-400 p-6 sm:p-8 lg:p-10 cursor-pointer transition-all duration-300 group bg-gray-50 hover:bg-green-50/50 min-h-[220px] sm:min-h-[280px] lg:min-h-[360px] w-full"
             >
               <div className="h-14 w-14 rounded-2xl bg-white border border-gray-100 flex items-center justify-center group-hover:border-green-200 group-hover:shadow-sm transition-all">
                 <ImageIcon className="h-6 w-6 text-gray-400 group-hover:text-green-500 transition-colors" />
