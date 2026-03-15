@@ -58,7 +58,7 @@ export const config = {
 // ── Main handler ──────────────────────────────────────────────────────────────
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? process.env.VITE_GEMINI_API_KEY ?? "";
-  const GEMINI_MODEL = process.env.GEMINI_VISION_MODEL ?? "gemini-1.5-flash";
+  const GEMINI_MODEL = process.env.GEMINI_VISION_MODEL ?? "";
   const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
   const SUPABASE_KEY = process.env.SUPABASE_KEY ?? process.env.VITE_SUPABASE_KEY ?? "";
 
