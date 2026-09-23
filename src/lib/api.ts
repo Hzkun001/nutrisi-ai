@@ -10,9 +10,12 @@ const API_BASE =
  * Send a food image to the backend for AI analysis.
  * Returns the full scan result including detected foods and nutrition totals.
  */
-export async function analyzeImage(file: File): Promise<ScanResult> {
+export async function analyzeImage(file: File, model?: string): Promise<ScanResult> {
   const formData = new FormData();
   formData.append("file", file);
+  if (model) {
+    formData.append("model", model);
+  }
 
   const endpoint = `${API_BASE}/api/analyze`;
   const res = await fetch(endpoint, {

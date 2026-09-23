@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+.codebase-memory
 
 # Environment variables
 .env

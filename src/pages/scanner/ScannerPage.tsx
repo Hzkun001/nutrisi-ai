@@ -7,24 +7,25 @@ import NutritionSummary from "@/components/scanner/NutritionSummary";
 import LabelBadge from "@/components/scanner/LabelBadge";
 import LoadingState from "@/components/shared/LoadingState";
 import EmptyStateCard from "@/components/shared/EmptyStateCard";
-import { Scan as ScanIcon, AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Scan as ScanIcon, AlertTriangle, Eye } from "lucide-react";
 import { analyzeImage } from "@/lib/api";
 import type { ScanResult } from "@/lib/types";
 import { useLanguage } from "@/lib/i18n";
 
 const ScannerPage = () => {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAnalyze = async (file: File) => {
+  const handleAnalyze = async (file: File, model?: string) => {
     setIsLoading(true);
     setError(null);
     setScanResult(null);
 
     try {
-      const result = await analyzeImage(file);
+      const result = await analyzeImage(file, model);
       setScanResult(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("scanner.error"));
@@ -87,7 +88,15 @@ const ScannerPage = () => {
                   >
                     {/* Labels */}
                     <div className="p-5 sm:p-8 rounded-3xl bg-white border border-gray-100 shadow-sm">
-                      <h3 className="text-xs font-bold uppercase tracking-widest text-cyan-600 mb-5">{t("scanner.labels")}</h3>
+                      <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-cyan-600">{t("scanner.labels")}</h3>
+                        {scanResult.model_used && (
+                          <span className="text-[10px] font-medium text-gray-500 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-500" />
+                            {scanResult.model_used}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex flex-wrap gap-2">
                         {scanResult.vision_labels.map((l, i) => <LabelBadge key={l} label={l} index={i} />)}
                       </div>
@@ -95,10 +104,29 @@ const ScannerPage = () => {
 
                     {/* Foods */}
                     <div className="p-5 sm:p-8 rounded-3xl bg-white border border-gray-100 shadow-sm">
-                      <h3 className="text-xs font-bold uppercase tracking-widest text-green-600 mb-5">{t("scanner.foods")}</h3>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        {scanResult.detected_foods.map((f, i) => <FoodResultCard key={f.input_name} food={f} index={i} />)}
+                      <div className="flex items-center justify-between mb-5">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-green-600">{t("scanner.foods")}</h3>
+                        {scanResult.id && (
+                          <Link
+                            to={`/history/${scanResult.id}`}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100/80 px-3 py-1 rounded-lg border border-green-200 transition-colors"
+                          >
+                            <Eye className="h-3 w-3" />
+                            {locale === "id" ? "Buka di Riwayat" : "View in History"}
+                          </Link>
+                        )}
                       </div>
+                      {scanResult.detected_foods.length > 0 ? (
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          {scanResult.detected_foods.map((f, i) => <FoodResultCard key={f.input_name} food={f} index={i} />)}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 py-3">
+                          {locale === "id"
+                            ? "Makanan pada foto belum terdaftar di database gizi kami."
+                            : "Foods in the photo could not be matched with our nutrition database."}
+                        </p>
+                      )}
                     </div>
 
                     {/* Unmatched Labels Notice */}
@@ -111,14 +139,14 @@ const ScannerPage = () => {
                       >
                         <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-amber-400 mb-2">
+                          <p className="text-sm font-semibold text-amber-600 mb-2">
                             {t("scanner.unmatched")}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {scanResult.unmatched_labels.map((label) => (
                               <span
                                 key={label}
-                                className="inline-block rounded-md bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-300"
+                                className="inline-block rounded-md bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-700"
                               >
                                 {label}
                               </span>

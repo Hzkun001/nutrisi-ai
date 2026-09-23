@@ -7,7 +7,7 @@ import { useLanguage } from "@/lib/i18n";
 type UploadState = "empty" | "preview" | "loading";
 
 interface UploadCardProps {
-  onAnalyze?: (file: File) => void;
+  onAnalyze?: (file: File, model?: string) => void;
   isLoading?: boolean;
   error?: string | null;
 }
@@ -17,12 +17,15 @@ const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) =>
   const [state, setState] = useState<UploadState>("empty");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>("qwen/qwen3.8-27b");
 
   const displayState: UploadState = isLoading ? "loading" : state;
 
   const handleFile = useCallback((file: File) => {
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
     setSelectedFile(file);
     setState("preview");
   }, []);
@@ -36,18 +39,22 @@ const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) =>
   const handleSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFile(file);
+    e.target.value = "";
   }, [handleFile]);
 
   const handleAnalyze = () => {
     if (selectedFile) {
-      onAnalyze?.(selectedFile);
+      onAnalyze?.(selectedFile, selectedModel);
     }
   };
 
   const handleClear = () => {
-    setState("empty");
-    setPreviewUrl(null);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     setSelectedFile(null);
+    setState("empty");
   };
 
   return (
@@ -105,6 +112,42 @@ const UploadCard = ({ onAnalyze, isLoading = false, error }: UploadCardProps) =>
               >
                 <X className="h-4 w-4" />
               </button>
+            </div>
+
+            {/* AI Vision Model Selector */}
+            <div className="rounded-2xl bg-gray-50 border border-gray-100 p-3.5 space-y-1.5">
+              <label className="text-xs font-bold text-gray-700 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-gray-800">
+                  <Sparkles className="h-3.5 w-3.5 text-green-600" />
+                  {t("upload.model")}
+                </span>
+                <span className="text-[10px] text-green-700 bg-green-100/70 px-2 py-0.5 rounded font-semibold border border-green-200/50">
+                  Vision AI
+                </span>
+              </label>
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                disabled={isLoading}
+                className="w-full text-xs font-medium bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all cursor-pointer shadow-sm"
+              >
+                <optgroup label="Groq LPU Vision (Inference Ultra Cepat)">
+                  <option value="qwen/qwen3.8-27b">Groq - Qwen 3.8 27B Vision (LPU Ultra Cepat ~0.1s)</option>
+                </optgroup>
+                <optgroup label="Google Gemini Vision">
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash (Default - Cepat & Akurat)</option>
+                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stabil)</option>
+                  <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (Ringan)</option>
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro (Detail Kompleks)</option>
+                </optgroup>
+                <optgroup label="xAI Grok Vision">
+                  <option value="grok-2-vision-1212">xAI - Grok 2 Vision 1212 (Multimodal Cerdas)</option>
+                  <option value="grok-vision-beta">xAI - Grok Vision Beta (Eksperimental)</option>
+                </optgroup>
+              </select>
+              <p className="text-[11px] text-gray-400 px-0.5">
+                {t("upload.model.desc")}
+              </p>
             </div>
 
             {error && (

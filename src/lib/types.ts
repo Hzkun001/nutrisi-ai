@@ -20,6 +20,9 @@ export interface TotalNutrition {
 
 /** Full response from POST /analyze/image. */
 export interface ScanResult {
+  id?: number | string;
+  created_at?: string;
+  model_used?: string;
   raw_vision_labels: string[];
   vision_labels: string[];
   detected_foods: DetectedFood[];
