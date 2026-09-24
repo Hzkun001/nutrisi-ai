@@ -96,48 +96,9 @@ describe("Label Normalizer & Food Aliasing", () => {
 });
 
 describe("AI Vision Models Integration", () => {
-  it("defines standard vision models with Gemini 2.0 Flash as primary", async () => {
-    const { SUPPORTED_VISION_MODELS } = await import("../../api/analyze");
-    expect(SUPPORTED_VISION_MODELS).toContain("gemini-2.0-flash");
-    expect(SUPPORTED_VISION_MODELS).toContain("gemini-1.5-flash");
-    expect(SUPPORTED_VISION_MODELS).toContain("gemini-2.0-flash-lite");
-    expect(SUPPORTED_VISION_MODELS).toContain("gemini-1.5-pro");
-    expect(SUPPORTED_VISION_MODELS[0]).toBe("gemini-2.0-flash");
-  });
-
-  it("supports Groq LPU Vision models and correctly identifies them", async () => {
-    const { SUPPORTED_GROQ_MODELS, SUPPORTED_VISION_MODELS, isGroqModel } = await import("../../api/analyze");
-    expect(SUPPORTED_GROQ_MODELS).toContain("qwen/qwen3.8-27b");
-    expect(SUPPORTED_VISION_MODELS).toContain("qwen/qwen3.8-27b");
-
-    expect(isGroqModel("qwen/qwen3.8-27b")).toBe(true);
-    expect(isGroqModel("gemini-2.0-flash")).toBe(false);
-    expect(isGroqModel("grok-2-vision-1212")).toBe(false);
-  });
-
-  it("supports xAI Grok Vision models and correctly identifies them", async () => {
-    const { SUPPORTED_GROK_MODELS, SUPPORTED_VISION_MODELS, isGrokModel } = await import("../../api/analyze");
-    expect(SUPPORTED_GROK_MODELS).toContain("grok-2-vision-1212");
-    expect(SUPPORTED_GROK_MODELS).toContain("grok-vision-beta");
-    expect(SUPPORTED_VISION_MODELS).toContain("grok-2-vision-1212");
-    expect(SUPPORTED_VISION_MODELS).toContain("grok-vision-beta");
-
-    expect(isGrokModel("grok-2-vision-1212")).toBe(true);
-    expect(isGrokModel("grok-vision-beta")).toBe(true);
-    expect(isGrokModel("gemini-2.0-flash")).toBe(false);
-    expect(isGrokModel("gemini-1.5-pro")).toBe(false);
-  });
-
-  it("filters placeholder and invalid API keys correctly", async () => {
-    const { isValidKey } = await import("../../api/analyze");
-    expect(isValidKey(undefined)).toBe(false);
-    expect(isValidKey("")).toBe(false);
-    expect(isValidKey("   ")).toBe(false);
-    expect(isValidKey("your_google_ai_studio_key_here")).toBe(false);
-    expect(isValidKey("your_groq_api_key_here")).toBe(false);
-    expect(isValidKey("<key>")).toBe(false);
-    expect(isValidKey("undefined")).toBe(false);
-    expect(isValidKey("gsk_valid_key_12345")).toBe(true);
+  it("uses Groq Qwen 3.8 27B Vision model", async () => {
+    const { GROQ_VISION_MODEL } = await import("../../api/analyze");
+    expect(GROQ_VISION_MODEL).toBe("qwen/qwen3.8-27b");
   });
 });
 

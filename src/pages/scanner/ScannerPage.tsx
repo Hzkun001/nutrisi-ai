@@ -19,13 +19,13 @@ const ScannerPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAnalyze = async (file: File, model?: string) => {
+  const handleAnalyze = async (file: File) => {
     setIsLoading(true);
     setError(null);
     setScanResult(null);
 
     try {
-      const result = await analyzeImage(file, model);
+      const result = await analyzeImage(file);
       setScanResult(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("scanner.error"));

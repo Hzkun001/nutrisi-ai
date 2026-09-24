@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 import formidable from "formidable";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
@@ -8,8 +7,6 @@ import {
   DISPLAY_NAME_RULES,
 } from "../lib/labelNormalizer.js";
 import { findFood, calculateNutrition } from "../lib/nutritionDB.js";
-
-
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function jsonError(res: VercelResponse, message: string, status = 400) {
@@ -33,60 +30,13 @@ function localizeLabel(label: string): string {
   return toTitleCase(normalized);
 }
 
-export function isValidKey(key: string | undefined): boolean {
-  if (!key) return false;
-  const trimmed = key.trim();
-  if (
-    trimmed === "" ||
-    trimmed === "undefined" ||
-    trimmed === "null" ||
-    trimmed.startsWith("your_") ||
-    trimmed.startsWith("<")
-  ) {
-    return false;
-  }
-  return true;
-}
+export const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
 
-export const SUPPORTED_GEMINI_MODELS = [
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-1.5-pro",
-] as const;
-
-export const SUPPORTED_GROQ_MODELS = [
-  "qwen/qwen3.8-27b",
-] as const;
-
-export const SUPPORTED_GROK_MODELS = [
-  "grok-2-vision-1212",
-  "grok-vision-beta",
-] as const;
-
-export const SUPPORTED_VISION_MODELS = [
-  ...SUPPORTED_GEMINI_MODELS,
-  ...SUPPORTED_GROQ_MODELS,
-  ...SUPPORTED_GROK_MODELS,
-] as const;
-
-export function isGroqModel(model: string): boolean {
-  const m = model.toLowerCase();
-  return m.startsWith("qwen") || m.includes("groq") || m.includes("llama-3.2");
-}
-
-export function isGrokModel(model: string): boolean {
-  return model.toLowerCase().startsWith("grok");
-}
-
-async function callGroqVision(
+export async function callGroqVision(
   imageBase64: string,
   mimeType: string,
-  apiKey: string,
-  modelName: string
+  apiKey: string
 ): Promise<{ labels: string[]; modelUsed: string }> {
-  const model = modelName || "qwen/qwen3.8-27b";
-
   const prompt = `You are an Indonesian food and nutrition recognition assistant.
 Analyze the image and identify the food and drink items present.
 Rules:
@@ -104,7 +54,7 @@ Return ONLY valid JSON in this exact format:
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model,
+      model: GROQ_VISION_MODEL,
       messages: [
         {
           role: "user",
@@ -141,130 +91,7 @@ Return ONLY valid JSON in this exact format:
 
   const parsed = JSON.parse(jsonMatch[0]) as { labels?: string[] };
   const labels = (parsed.labels ?? []).map((l) => String(l).trim().toLowerCase()).filter(Boolean);
-  return { labels, modelUsed: model };
-}
-
-async function callGrokVision(
-  imageBase64: string,
-  mimeType: string,
-  apiKey: string,
-  modelName: string
-): Promise<{ labels: string[]; modelUsed: string }> {
-  const model = modelName || "grok-2-vision-1212";
-
-  const prompt = `You are an Indonesian food and nutrition recognition assistant.
-Analyze the image and identify the food and drink items present.
-Rules:
-- Identify food/drink names in Indonesian or common English.
-- If coffee or tea is present, specify whether it is sweet/milk or plain/black (e.g. "kopi hitam", "kopi susu", "es teh manis", "teh tawar").
-- Avoid generic non-food objects like plate, food, dish, meal, table, bowl, cup.
-- Maximum 5 labels.
-Return ONLY valid JSON in this exact format:
-{"labels": ["nasi", "ayam goreng"]}`;
-
-  const res = await fetch("https://api.x.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${mimeType};base64,${imageBase64}`,
-              },
-            },
-          ],
-        },
-      ],
-      temperature: 0.2,
-    }),
-  });
-
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => "");
-    throw new Error(`xAI Grok API error (${res.status}): ${errorBody || res.statusText}`);
-  }
-
-  const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-
-  const text = data?.choices?.[0]?.message?.content?.trim() || "";
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error(`Respons Grok vision tidak menghasilkan JSON yang valid: ${text.slice(0, 100)}`);
-  }
-
-  const parsed = JSON.parse(jsonMatch[0]) as { labels?: string[] };
-  const labels = (parsed.labels ?? []).map((l) => String(l).trim().toLowerCase()).filter(Boolean);
-  return { labels, modelUsed: model };
-}
-
-async function callGeminiVision(
-  imageBase64: string,
-  mimeType: string,
-  apiKey: string,
-  preferredModel: string
-): Promise<{ labels: string[]; modelUsed: string }> {
-  const ai = new GoogleGenAI({ apiKey });
-
-  const prompt = `You are an Indonesian food and nutrition recognition assistant.
-Analyze the image and identify the food and drink items present.
-Rules:
-- Identify food/drink names in Indonesian or common English.
-- If coffee or tea is present, specify whether it is sweet/milk or plain/black (e.g. "kopi hitam", "kopi susu", "es teh manis", "teh tawar").
-- Avoid generic non-food objects like plate, food, dish, meal, table, bowl, cup.
-- Maximum 5 labels.
-Return ONLY valid JSON in this exact format:
-{"labels": ["nasi", "ayam goreng"]}`;
-
-  // Prioritize preferred model, then try remaining models as fallback
-  const candidateModels = [
-    preferredModel,
-    ...SUPPORTED_GEMINI_MODELS.filter((m) => m !== preferredModel),
-  ].filter(Boolean);
-
-  let lastError: unknown;
-
-  for (const model of candidateModels) {
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: [
-          { inlineData: { data: imageBase64, mimeType } },
-          prompt,
-        ],
-      });
-
-      const text = (response.text || "").trim();
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error(`Respons AI vision tidak menghasilkan JSON yang valid: ${text.slice(0, 100)}`);
-      }
-
-      const parsed = JSON.parse(jsonMatch[0]) as { labels?: string[] };
-      const labels = (parsed.labels ?? []).map((l) => String(l).trim().toLowerCase()).filter(Boolean);
-      return { labels, modelUsed: model };
-    } catch (err) {
-      console.warn(`Model ${model} gagal atau tidak tersedia, mencoba model cadangan:`, err);
-      lastError = err;
-      const errStr = String(err);
-      if (errStr.includes("API_KEY_INVALID") || errStr.includes("API key not valid")) {
-        // If the key is invalid, retrying other Gemini models will also fail
-        break;
-      }
-    }
-  }
-
-  throw new Error(`Semua model vision gagal memproses gambar: ${String(lastError)}`);
+  return { labels, modelUsed: GROQ_VISION_MODEL };
 }
 
 export const config = {
@@ -275,13 +102,7 @@ export const config = {
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 export default async function handler(request: VercelRequest, response: VercelResponse) {
-  const rawGemini = process.env.GEMINI_API_KEY ?? process.env.VITE_GEMINI_API_KEY ?? "";
-  const rawGroq = process.env.GROQ_API_KEY ?? process.env.VITE_GROQ_API_KEY ?? "";
-  const rawXai = process.env.XAI_API_KEY ?? process.env.VITE_XAI_API_KEY ?? "";
-
-  const GEMINI_API_KEY = isValidKey(rawGemini) ? rawGemini.trim() : "";
-  const GROQ_API_KEY = isValidKey(rawGroq) ? rawGroq.trim() : "";
-  const XAI_API_KEY = isValidKey(rawXai) ? rawXai.trim() : "";
+  const GROQ_API_KEY = (process.env.GROQ_API_KEY ?? process.env.VITE_GROQ_API_KEY ?? "").trim();
   const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
   const SUPABASE_KEY = process.env.SUPABASE_KEY ?? process.env.VITE_SUPABASE_KEY ?? "";
 
@@ -289,10 +110,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
     return jsonError(response, "Metode tidak diizinkan", 405);
   }
 
-  if (!GEMINI_API_KEY && !GROQ_API_KEY && !XAI_API_KEY) {
+  if (!GROQ_API_KEY || GROQ_API_KEY.startsWith("your_")) {
     return jsonError(
       response,
-      "Kunci API AI belum dikonfigurasi di Vercel Dashboard. Harap buka Vercel > Project Settings > Environment Variables, lalu tambahkan GROQ_API_KEY (atau GEMINI_API_KEY) dan lakukan Redeploy.",
+      "GROQ_API_KEY belum dikonfigurasi di Vercel Dashboard. Harap buka Vercel > Project Settings > Environment Variables, tambahkan GROQ_API_KEY, lalu lakukan Redeploy.",
       500
     );
   }
@@ -319,11 +140,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     return jsonError(response, "Format multipart form tidak valid", 400);
   }
 
-  const { fields, files } = parsed;
-  const requestedModel = (
-    Array.isArray(fields?.model) ? fields.model[0] : fields?.model
-  ) || process.env.GEMINI_VISION_MODEL || "gemini-2.0-flash";
-
+  const { files } = parsed;
   const fileArray = files?.file;
 
   if (!fileArray || fileArray.length === 0) {
@@ -348,65 +165,18 @@ export default async function handler(request: VercelRequest, response: VercelRe
     console.warn("Failed to clean up temp file:", cleanupErr);
   }
 
-  // Call AI vision with multi-provider routing & automatic fallback
+  // Call Groq Vision
   let rawLabels: string[] = [];
-  let modelUsed = requestedModel;
-
-  const tryGroq = async (m: string) => {
-    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY belum dikonfigurasi");
-    return await callGroqVision(base64, mimeType, GROQ_API_KEY, m);
-  };
-
-  const tryGrok = async (m: string) => {
-    if (!XAI_API_KEY) throw new Error("XAI_API_KEY belum dikonfigurasi");
-    return await callGrokVision(base64, mimeType, XAI_API_KEY, m);
-  };
-
-  const tryGemini = async (m: string) => {
-    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY belum dikonfigurasi");
-    return await callGeminiVision(base64, mimeType, GEMINI_API_KEY, m);
-  };
-
-  type ProviderRunner = () => Promise<{ labels: string[]; modelUsed: string }>;
-  const runners: ProviderRunner[] = [];
-
-  if (isGroqModel(requestedModel)) {
-    runners.push(() => tryGroq(requestedModel));
-    if (GEMINI_API_KEY) runners.push(() => tryGemini("gemini-2.0-flash"));
-    if (XAI_API_KEY) runners.push(() => tryGrok("grok-2-vision-1212"));
-  } else if (isGrokModel(requestedModel)) {
-    runners.push(() => tryGrok(requestedModel));
-    if (GEMINI_API_KEY) runners.push(() => tryGemini("gemini-2.0-flash"));
-    if (GROQ_API_KEY) runners.push(() => tryGroq("qwen/qwen3.8-27b"));
-  } else {
-    // Gemini requested
-    runners.push(() => tryGemini(requestedModel));
-    if (GROQ_API_KEY) runners.push(() => tryGroq("qwen/qwen3.8-27b"));
-    if (XAI_API_KEY) runners.push(() => tryGrok("grok-2-vision-1212"));
-  }
-
-  let lastError: unknown;
-  let success = false;
-
-  for (const run of runners) {
-    try {
-      const result = await run();
-      rawLabels = result.labels;
-      modelUsed = result.modelUsed;
-      success = true;
-      break;
-    } catch (err) {
-      console.warn("Vision provider error, trying fallback if available:", err);
-      lastError = err;
-    }
-  }
-
-  if (!success) {
-    const errStr = String(lastError);
-    if (errStr.includes("API_KEY_INVALID") || errStr.includes("API key not valid")) {
+  try {
+    const result = await callGroqVision(base64, mimeType, GROQ_API_KEY);
+    rawLabels = result.labels;
+  } catch (err) {
+    console.error("Groq vision error:", err);
+    const errStr = String(err);
+    if (errStr.includes("401") || errStr.includes("Invalid API Key")) {
       return jsonError(
         response,
-        "Kunci API AI Vision di Vercel tidak valid. Harap periksa dan perbarui GROQ_API_KEY atau GEMINI_API_KEY di Vercel Dashboard (Project Settings > Environment Variables).",
+        "GROQ_API_KEY tidak valid. Harap periksa kunci API Groq Anda di Vercel Dashboard (Project Settings > Environment Variables).",
         502
       );
     }
@@ -459,7 +229,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
   const localizedUnmatchedLabels = unmatchedLabels.map(localizeLabel);
 
   const responseBody = {
-    model_used: modelUsed,
+    model_used: GROQ_VISION_MODEL,
     raw_vision_labels: rawLabels,
     vision_labels: localizedVisionLabels,
     detected_foods: detectedFoods,
