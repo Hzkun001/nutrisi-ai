@@ -127,5 +127,17 @@ describe("AI Vision Models Integration", () => {
     expect(isGrokModel("gemini-2.0-flash")).toBe(false);
     expect(isGrokModel("gemini-1.5-pro")).toBe(false);
   });
+
+  it("filters placeholder and invalid API keys correctly", async () => {
+    const { isValidKey } = await import("../../api/analyze");
+    expect(isValidKey(undefined)).toBe(false);
+    expect(isValidKey("")).toBe(false);
+    expect(isValidKey("   ")).toBe(false);
+    expect(isValidKey("your_google_ai_studio_key_here")).toBe(false);
+    expect(isValidKey("your_groq_api_key_here")).toBe(false);
+    expect(isValidKey("<key>")).toBe(false);
+    expect(isValidKey("undefined")).toBe(false);
+    expect(isValidKey("gsk_valid_key_12345")).toBe(true);
+  });
 });
 

@@ -33,6 +33,21 @@ function localizeLabel(label: string): string {
   return toTitleCase(normalized);
 }
 
+export function isValidKey(key: string | undefined): boolean {
+  if (!key) return false;
+  const trimmed = key.trim();
+  if (
+    trimmed === "" ||
+    trimmed === "undefined" ||
+    trimmed === "null" ||
+    trimmed.startsWith("your_") ||
+    trimmed.startsWith("<")
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export const SUPPORTED_GEMINI_MODELS = [
   "gemini-2.0-flash",
   "gemini-1.5-flash",
@@ -241,6 +256,11 @@ Return ONLY valid JSON in this exact format:
     } catch (err) {
       console.warn(`Model ${model} gagal atau tidak tersedia, mencoba model cadangan:`, err);
       lastError = err;
+      const errStr = String(err);
+      if (errStr.includes("API_KEY_INVALID") || errStr.includes("API key not valid")) {
+        // If the key is invalid, retrying other Gemini models will also fail
+        break;
+      }
     }
   }
 
@@ -255,9 +275,13 @@ export const config = {
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 export default async function handler(request: VercelRequest, response: VercelResponse) {
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? process.env.VITE_GEMINI_API_KEY ?? "";
-  const GROQ_API_KEY = process.env.GROQ_API_KEY ?? process.env.VITE_GROQ_API_KEY ?? "";
-  const XAI_API_KEY = process.env.XAI_API_KEY ?? process.env.VITE_XAI_API_KEY ?? "";
+  const rawGemini = process.env.GEMINI_API_KEY ?? process.env.VITE_GEMINI_API_KEY ?? "";
+  const rawGroq = process.env.GROQ_API_KEY ?? process.env.VITE_GROQ_API_KEY ?? "";
+  const rawXai = process.env.XAI_API_KEY ?? process.env.VITE_XAI_API_KEY ?? "";
+
+  const GEMINI_API_KEY = isValidKey(rawGemini) ? rawGemini.trim() : "";
+  const GROQ_API_KEY = isValidKey(rawGroq) ? rawGroq.trim() : "";
+  const XAI_API_KEY = isValidKey(rawXai) ? rawXai.trim() : "";
   const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
   const SUPABASE_KEY = process.env.SUPABASE_KEY ?? process.env.VITE_SUPABASE_KEY ?? "";
 
@@ -268,7 +292,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
   if (!GEMINI_API_KEY && !GROQ_API_KEY && !XAI_API_KEY) {
     return jsonError(
       response,
-      "Kunci API belum dikonfigurasi. Harap konfigurasi GEMINI_API_KEY, GROQ_API_KEY, atau XAI_API_KEY di .env.",
+      "Kunci API AI belum dikonfigurasi di Vercel Dashboard. Harap buka Vercel > Project Settings > Environment Variables, lalu tambahkan GROQ_API_KEY (atau GEMINI_API_KEY) dan lakukan Redeploy.",
       500
     );
   }
@@ -378,7 +402,15 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
 
   if (!success) {
-    return jsonError(response, `AI vision gagal memproses gambar: ${String(lastError)}`, 502);
+    const errStr = String(lastError);
+    if (errStr.includes("API_KEY_INVALID") || errStr.includes("API key not valid")) {
+      return jsonError(
+        response,
+        "Kunci API AI Vision di Vercel tidak valid. Harap periksa dan perbarui GROQ_API_KEY atau GEMINI_API_KEY di Vercel Dashboard (Project Settings > Environment Variables).",
+        502
+      );
+    }
+    return jsonError(response, `AI vision gagal memproses gambar: ${errStr}`, 502);
   }
 
   // Normalize & filter labels
